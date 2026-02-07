@@ -1,0 +1,5 @@
+# Ignore environment variables
+.env
+
+# Ignore any directory starting with data_
+data_*/
