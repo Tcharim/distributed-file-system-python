@@ -6,6 +6,7 @@ from common.protocol import *
 
 STORAGE_DIR = "data_"  # Chaque serveur a son propre dossier
 
+# Gestion des requêtes clients
 def handle_client(conn, addr, server_dir):
     data = conn.recv(4096).decode()
     request = json.loads(data)
@@ -17,6 +18,7 @@ def handle_client(conn, addr, server_dir):
     filepath = os.path.join(server_dir, filename)
     response = {}
 
+    # Traitement de la lecture, création, écriture, suppression et liste de fichiers
     if action == ACTION_READ:
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
@@ -51,9 +53,11 @@ def handle_client(conn, addr, server_dir):
     conn.close()
 
 def main(port, server_dir):
+    ADDRESS = ("127.0.0.1", port)
+    
     os.makedirs(server_dir, exist_ok=True)
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("127.0.0.1", port))
+    server.bind(ADDRESS)
     
     server.listen(5)
     

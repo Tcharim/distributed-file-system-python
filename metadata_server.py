@@ -6,21 +6,18 @@ from common.utils import send_request
 from common.protocol import *
 from dotenv import load_dotenv
 
-load_dotenv()
 
-# Mapping : filename -> storage_server (ip, port)
+# Chargement des variables d'environnement
+load_dotenv()
+storage_servers = []
+for server in os.getenv("STORAGE_SERVERS").split(","):
+    ip, port = server.split(":")
+    storage_servers.append((ip, int(port)))
+
 files = {}
-# Verrous des fichiers
 locks = set()
 
-# Liste des serveurs de stockage disponibles
-storage_servers = [
-    tuple(server.split(":")) 
-    for server in os.getenv("STORAGE_SERVERS").split(",")
-]
-storage_servers = [("127.0.0.1", 9001), ("127.0.0.1", 9002)]
-PORT = 8000
-
+# Liste des fichiers disponibles dans les serveurs de stockage
 def list_storages():
     for (ip, port) in storage_servers:
         response = send_request(ip, port, {"action": ACTION_LIST})
@@ -31,11 +28,13 @@ def list_storages():
         for f in temp_files:
             files[f] = (ip, port)
 
+# Sélection d'un serveur de stockage pour un fichier
 def select_storage(filename):
     # Choix simple : hash du nom du fichier
     idx = hash(filename) % len(storage_servers)
     return storage_servers[idx]
 
+# Gestion des requêtes clients
 def handle_client(conn, addr):
     data = conn.recv(4096).decode()
     request = json.loads(data)
@@ -45,11 +44,13 @@ def handle_client(conn, addr):
 
     response = {}
 
+    # Traitement de la création de fichiers
     if action == ACTION_CREATE:
         storage = select_storage(filename)
         files[filename] = storage
         response = {"status": STATUS_OK, "storage": storage}
 
+    # Traitement de la lecture, écriture et suppression de fichiers
     elif action == ACTION_READ or action == ACTION_WRITE or action == ACTION_DELETE:
         if filename not in files:
             response = {"status": STATUS_ERROR_FILE_NOT_FOUND}
@@ -59,6 +60,7 @@ def handle_client(conn, addr):
             if action == ACTION_DELETE:
                 del files[filename]
 
+    # Traitement du verrouillage de fichiers
     elif action == ACTION_LOCK:
         if filename in locks:
             response = {"status": STATUS_ERROR_FILE_LOCKED}
@@ -66,11 +68,12 @@ def handle_client(conn, addr):
             locks.add(filename)
             response = {"status": STATUS_OK}
 
+    # Traitement du déverrouillage de fichiers
     elif action == ACTION_UNLOCK:
         locks.discard(filename)
         response = {"status": STATUS_OK}
 
-    
+    # Traitement de la liste des fichiers
     elif action == ACTION_LIST:
         response = {"status": STATUS_OK, "files": list(files.keys())}
 
@@ -84,13 +87,16 @@ def handle_client(conn, addr):
 
 
 def main():
+    METADATA_SERVER = tuple(os.getenv("METADATA_SERVER").split(":"))
+    METADATA_SERVER = (METADATA_SERVER[0], int(METADATA_SERVER[1]))
+
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("127.0.0.1", PORT))
+    server.bind(METADATA_SERVER)
     server.listen(5)
 
     server.settimeout(1)
 
-    print(f"Metadata server running on port {PORT}")
+    print(f"Metadata server running on port {METADATA_SERVER[1]}")
 
     list_storages()
 
