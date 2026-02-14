@@ -105,7 +105,6 @@ if __name__ == "__main__":
                 continue
             
             action = command[0].lower()
-            
             if action == "list" or action == "ls":
                 list_files()
             elif action == "create" and len(command) > 1:
@@ -121,8 +120,11 @@ if __name__ == "__main__":
             elif (action == "delete" or action == "del") and len(command) > 1:
                 delete_file(command[1])        
             elif action == "exit":
+                print("Goodbye!")
                 break
             else:
-                print("Usage:\n\t list alias ls\n\t create <filename> [data]\n\t read <filename>\n\t write <filename> <data>\n\t delete (alias del) <filename>\n\t exit")
+                print("Usage:\n\t list (alias ls)\n\t create <filename> [data]\n\t read <filename>\n\t write <filename> <data>\n\t delete (alias del) <filename>\n\t exit")
     except KeyboardInterrupt:
-        print("\nInterrupted, exiting...")
+        print("Goodbye!")
+    except Exception as e:
+        print(f"Exiting with error: {e.__class__.__name__}")

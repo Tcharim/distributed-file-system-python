@@ -20,10 +20,11 @@ locks = set()
 # Liste des fichiers disponibles dans les serveurs de stockage
 def list_storages():
     for (ip, port) in storage_servers:
-        response = send_request(ip, port, {"action": ACTION_LIST})
-        if response["status"] != STATUS_OK:
-            print("Error:", response.get("status"))
-            return
+        try:
+            response = send_request(ip, port, {"action": ACTION_LIST})
+        except Exception as e:
+            print(f"Error connecting to storage server {ip}:{port}: {e.__class__.__name__}")
+            continue
         temp_files = response.get("files", [])
         for f in temp_files:
             files[f] = (ip, port)
